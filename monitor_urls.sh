@@ -2,8 +2,9 @@
 
 # Defaults
 INTERVAL=10
-MAX_REQUESTS=5
+MAX_REQUESTS=3
 URLS=()
+OUTPUT_FILE="/tmp/url_monitoring_results.csv"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -23,10 +24,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --maxrequests)
       MAX_REQUESTS="$2"
-      if ! [[ "$MAX_REQUESTS" =~ ^[0-9]+$ ]]; then
-        echo "Invalid maxrequests value."
-        exit 1
-      fi
+      [[ "$MAX_REQUESTS" =~ ^[0-9]+$ ]] || { echo "Invalid maxrequests"; exit 1; }
       shift 2
       ;;
     --urls)
@@ -43,16 +41,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Check if at least one URL was provided
+# Validate
 if [[ ${#URLS[@]} -eq 0 ]]; then
-  echo "No URLs provided. Use --urls <url1> <url2> ..."
+  echo "❌ No URLs provided. Use --urls <url1> <url2> ..."
   exit 1
 fi
 
-# Output file
-OUTPUT_FILE="url_monitoring_results.csv"
-
-# Construct header dynamically
+# Build CSV header
 header="Timestamp"
 for i in "${!URLS[@]}"; do
   idx=$((i+1))
@@ -60,7 +55,7 @@ for i in "${!URLS[@]}"; do
 done
 echo "$header" > "$OUTPUT_FILE"
 
-# Function to get status and response header
+# Function to fetch status and headers
 get_headers() {
   local url=$1
   local tmp_file=$(mktemp)
@@ -70,39 +65,31 @@ get_headers() {
        2> "$tmp_file"
 
   status_code=$(grep '^< HTTP' "$tmp_file" | head -n 1 | awk '{print $3}')
-  [ -z "$status_code" ] && status_code="ERROR"
+  [[ -z "$status_code" ]] && status_code="ERROR"
 
-  response_headers=$(grep '^< ' "$tmp_file" | sed 's/^< //' | tr -d '\r' | tr '\n' ' ' | sed 's/"/\\"/g')
+  response_headers=$(grep '^< ' "$tmp_file" |
+                     sed 's/^< //' | tr -d '\r' | tr '\n' ' ' |
+                     sed 's/"/\\"/g')
 
   rm "$tmp_file"
   echo "$status_code|$response_headers"
 }
 
-echo "Starting URL monitoring..."
-echo "Interval: $INTERVAL seconds"
-echo "Max Requests: $MAX_REQUESTS"
-echo "Monitoring ${#URLS[@]} URL(s)"
-echo "Saving results to $OUTPUT_FILE"
-
-# Start monitoring loop
+# Monitor loop
 for ((i = 1; i <= MAX_REQUESTS; i++)); do
-  echo "Iteration $i of $MAX_REQUESTS"
+  echo "🔁 Iteration $i of $MAX_REQUESTS"
   timestamp=$(date +"%Y-%m-%d %H:%M:%S")
-
   row="\"$timestamp\""
+
   for url in "${URLS[@]}"; do
-    res=$(get_headers "$url")
-    status=$(echo "$res" | cut -d'|' -f1)
-    response=$(echo "$res" | cut -d'|' -f2)
-    row="$row,\"$url\",\"$status\",\"$response\""
+    result=$(get_headers "$url")
+    status=$(echo "$result" | cut -d'|' -f1)
+    headers=$(echo "$result" | cut -d'|' -f2)
+    row="$row,\"$url\",\"$status\",\"$headers\""
   done
 
   echo "$row" >> "$OUTPUT_FILE"
-
-  if [ $i -lt $MAX_REQUESTS ]; then
-    echo "Waiting $INTERVAL seconds..."
-    sleep "$INTERVAL"
-  fi
+  [[ $i -lt $MAX_REQUESTS ]] && sleep "$INTERVAL"
 done
 
-echo "✅ Monitoring complete. Results saved to $OUTPUT_FILE"
+echo "✅ Monitoring done. CSV saved at $OUTPUT_FILE"
