@@ -3,7 +3,7 @@ name: URL Monitoring
 on:
   schedule:
     - cron: "* * * * *"  # every 1 minute
-  workflow_dispatch:     # allow manual trigger
+  workflow_dispatch:     # allow manual run
 
 jobs:
   monitor:
@@ -23,10 +23,13 @@ jobs:
           path: ./monitoring
           if_no_artifact_found: ignore
 
-      - name: Make monitor script executable
-        run: chmod +x ./monitor_urls.sh
+      - name: Copy monitor script to monitoring dir
+        run: cp ./monitor_urls.sh ./monitoring/
 
-      - name: Run URL monitor (6 times at 10s intervals)
+      - name: Make script executable
+        run: chmod +x ./monitoring/monitor_urls.sh
+
+      - name: Run URL monitor (6 checks at 10s intervals)
         run: ./monitor_urls.sh --interval 10s --maxrequests 6 --urls https://example.com/video1.mp4 https://example.com/video2.mp4
         working-directory: ./monitoring
 
