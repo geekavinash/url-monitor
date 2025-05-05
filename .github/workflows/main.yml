@@ -1,0 +1,25 @@
+name: URL Monitoring
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # every 10 minutes
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Make script executable
+        run: chmod +x ./monitor_urls.sh
+
+      - name: Run monitoring script
+        run: ./monitor_urls.sh --interval 10s --maxrequests 3 --urls https://example.com/1.mp4 https://example.com/2.mp4
+
+      - name: Upload monitoring results
+        uses: actions/upload-artifact@v4
+        with:
+          name: url-monitor-results
+          path: /tmp/url_monitoring_results.csv
