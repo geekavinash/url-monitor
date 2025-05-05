@@ -29,8 +29,8 @@ jobs:
       - name: Make script executable
         run: chmod +x ./monitoring/monitor_urls.sh
 
-      - name: Run URL monitor (6 checks at 10s intervals)
-        run: ./monitor_urls.sh --interval 10s --maxrequests 6 --urls https://example.com/video1.mp4 https://example.com/video2.mp4
+      - name: Run URL monitor (2 checks at 20s intervals)
+        run: ./monitor_urls.sh --interval 20s --maxrequests 2 --urls https://aem-s6web-preprod-skyplus6e.goindigo.in/content/dam/s6common/in/en/assets/homepage/videos/new_videos/app/Seychelles-224.mp4 https://aem-s6web-preprod-skyplus6e.goindigo.in/content/dam/s6common/in/en/assets/homepage/videos/new_videos/app/Mauritius-updated.mp4 https://aem-s6web-preprod-skyplus6e.goindigo.in/content/dam/s6common/in/en/assets/homepage/videos/new_videos/app/Kenya-updated.mp4 https://preprod.goindigo.in/content/dam/s6common/in/en/assets/homepage/videos/new_videos/app/Delhi_app.mp4 https://preprod.goindigo.in/content/dam/s6common/in/en/assets/homepage/videos/new_videos/app/Goa_app.mp4 https://www.goindigo.in/content/dam/s6common/in/en/assets/homepage/videos/new_videos/app/Mumbai_app.mp4
         working-directory: ./monitoring
 
       - name: Upload updated consolidated CSV
